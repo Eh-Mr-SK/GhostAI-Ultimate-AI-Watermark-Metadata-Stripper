@@ -67,6 +67,33 @@ def strip_image_metadata(input_path, output_path):
         raise Exception(f"Image processing error: {e}")
 
 
+def get_adaptive_crop_bounds(w, h, crop_right=280, crop_bottom=280):
+    """
+    Dynamically calculates the safest and smallest watermark crop boundaries
+    based on the media's aspect ratio and resolution, minimizing zoom level.
+    If the user has specified non-default values, those are prioritized.
+    """
+    # If the user has explicitly changed the default (280) values, respect them.
+    # Otherwise, calculate optimal smart bounds that cover the watermark without over-cropping.
+    cr = crop_right
+    cb = crop_bottom
+    
+    if crop_right == 280:
+        # Portait/Vertical?
+        if h > w:
+            cr = 200 if w >= 1080 else 140
+        else:
+            cr = 240 if w >= 1920 else 150
+            
+    if crop_bottom == 280:
+        if h > w:
+            cb = 140 if w >= 1080 else 100
+        else:
+            cb = 130 if w >= 1920 else 90
+            
+    return cr, cb
+
+
 def remove_image_watermark(input_path, output_path, crop_right=280, crop_bottom=280):
     """
     Removes corner watermark from image by cropping and scaling back.
@@ -78,16 +105,34 @@ def remove_image_watermark(input_path, output_path, crop_right=280, crop_bottom=
         original_size = img.size  # (width, height)
         w, h = original_size
         
+        # Calculate optimal crop bounds to minimize zoom
+        cr, cb = get_adaptive_crop_bounds(w, h, crop_right, crop_bottom)
+        
         # Determine crop boundaries while preserving the exact aspect ratio
         target_ar = w / h
-        max_w = w - crop_right
-        max_h = h - crop_bottom
         
-        new_w = max_w
-        new_h = int(round(new_w / target_ar))
+        # Option 1: Crop the right strip (cutting right side containing watermark)
+        w1 = w - cr
+        h1 = int(round(w1 / target_ar))
         
-        if new_h > max_h:
-            new_h = max_h
+        # Option 2: Crop the bottom strip (cutting bottom side containing watermark)
+        h2 = h - cb
+        w2 = int(round(h2 * target_ar))
+        
+        # Choose the crop option that keeps the largest area (maximizing width/height)
+        if w2 >= w1:
+            new_w = w2
+            new_h = h2
+        else:
+            new_w = w1
+            new_h = h1
+            
+        # Ensure dimensions don't exceed original sizes
+        if new_w > w:
+            new_w = w
+            new_h = int(round(new_w / target_ar))
+        if new_h > h:
+            new_h = h
             new_w = int(round(new_h * target_ar))
             
         # Crop from top-left (removes right and bottom corners without aspect distortion)
@@ -139,16 +184,34 @@ def remove_video_watermark(input_path, output_path, crop_right=280, crop_bottom=
     
     w, h = map(int, result.stdout.strip().split('x'))
     
+    # Calculate optimal crop bounds to minimize zoom
+    cr, cb = get_adaptive_crop_bounds(w, h, crop_right, crop_bottom)
+    
     # Determine crop boundaries while preserving the exact aspect ratio
     target_ar = w / h
-    max_w = w - crop_right
-    max_h = h - crop_bottom
     
-    new_w = max_w
-    new_h = int(round(new_w / target_ar))
+    # Option 1: Crop the right strip (cutting right side containing watermark)
+    w1 = w - cr
+    h1 = int(round(w1 / target_ar))
     
-    if new_h > max_h:
-        new_h = max_h
+    # Option 2: Crop the bottom strip (cutting bottom side containing watermark)
+    h2 = h - cb
+    w2 = int(round(h2 * target_ar))
+    
+    # Choose the crop option that keeps the largest area (maximizing width/height)
+    if w2 >= w1:
+        new_w = w2
+        new_h = h2
+    else:
+        new_w = w1
+        new_h = h1
+        
+    # Ensure dimensions don't exceed original sizes
+    if new_w > w:
+        new_w = w
+        new_h = int(round(new_w / target_ar))
+    if new_h > h:
+        new_h = h
         new_w = int(round(new_h * target_ar))
         
     # Ensure they are even integers for FFmpeg (h264 restriction)
