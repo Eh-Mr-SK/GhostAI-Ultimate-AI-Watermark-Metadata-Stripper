@@ -5,7 +5,7 @@
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-orange.svg)]()
 [![FFmpeg](https://img.shields.io/badge/dependency-FFmpeg-red.svg)](https://ffmpeg.org/)
 
-**GhostAI** is a powerful, locally-running bulk content optimizer designed to bypass AI-labelling algorithms on Instagram, TikTok, and YouTube. It strips deep invisible metadata (C2PA, XMP, EXIF) and removes corner AI watermarks (such as the Gemini/Veo star, Runway logos, etc.) from both videos and images—making them look exactly like genuine, camera-clicked files.
+**GhostAI** is a powerful, locally running media sanitization toolkit that removes embedded metadata and content credentials from media that you own for privacy, testing, interoperability, and digital preservation. It strips C2PA, XMP, EXIF, IPTC, GPS, and other embedded metadata from images and videos, and provides optional owner-controlled preprocessing (such as configurable cropping and resampling) for research, editing workflows, and media preparation.
 
 ---
 
